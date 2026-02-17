@@ -1,6 +1,6 @@
 version: str
 kind: str
-name: str
+name: test_tag
 description: str
 
 flow:

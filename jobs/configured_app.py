@@ -1,4 +1,10 @@
+from typing import List
+
+from pyflink.datastream import StreamExecutionEnvironment
 from pyflink.table import EnvironmentSettings, TableEnvironment
+from pyflink.table import StreamTableEnvironment
+
+from framework.dagger import Dag, FlowStep
 
 
 def run():
@@ -40,5 +46,38 @@ def run():
     statement_set.execute().wait()
 
 
-if (__name__ == '__main__'):
-    run()
+class PyFlinkDag:
+    def __init__(self, dag: Dag):
+        self.dag = dag
+
+        self.env = StreamExecutionEnvironment.get_execution_environment()
+        self.table_env = StreamTableEnvironment.create(self.env)
+
+        self.sources = self._resolve_sources(dag.get_flow_step_sequence('source'))
+
+        self.views = self._resolve_views(dag.get_flow_step_sequence('source'))
+
+        self.sinks = self._resolve_sinks(dag.get_flow_step_sequence('sinks'))
+
+    def _resolve_sources(self, steps: List[FlowStep]):
+        pass
+
+    def _resolve_views(self, steps):
+        pass
+
+    def _resolve_sinks(self, steps):
+        pass
+
+
+if __name__ == '__main__':
+    class SourceStep(FlowStep):
+        match_key = 'source'
+
+        def _init(self):
+            pass
+
+
+    dag = Dag.load("../config/test_dag.yml")
+
+    job = PyFlinkDag(dag)
+    print(job.dag._name)

@@ -4,43 +4,45 @@ from typing import Dict
 
 from pyflink.common.serialization import SimpleStringSchema
 from pyflink.datastream import (StreamExecutionEnvironment, RuntimeExecutionMode)
-from pyflink.datastream.connectors.kinesis import (FlinkKinesisConsumer, KinesisStreamsSink, PartitionKeyGenerator)
+from pyflink.datastream.connectors.kinesis import (FlinkKinesisConsumer)
+from pyflink.java_gateway import get_gateway
+
+from framework.connectors.dynamodb import DynamoDbSink
 
 LOCAL_DEBUG = os.getenv('LOCAL_DEBUG', False)
+KINESIS_ENDPOINT = os.getenv('KINESIS_ENDPOINT', 'http://localstack:4566')
+DYNAMODB_ENDPOINT = os.getenv('DYNAMODB_ENDPOINT', 'http://dynamodb-local:8000')
 
 
 def get_source(stream_name: str, config: Dict = None) -> FlinkKinesisConsumer:
     props = config or {}
     consumer_config = {
         'aws.region': 'us-east-1',
-        'aws.credentials.provider.basic.accesskeyid': 'localstack_ignored',
-        'aws.credentials.provider.basic.secretkey': 'localstack_ignored',
+        'aws.credentials.provider': 'BASIC',
+        'aws.credentials.provider.basic.accesskeyid': 'test',
+        'aws.credentials.provider.basic.secretkey': 'test',
         'flink.stream.initpos': 'LATEST',
-        'aws.endpoint': 'http://localhost:4566',
+        'aws.endpoint': KINESIS_ENDPOINT,
         **props
     }
     return FlinkKinesisConsumer(stream_name, SimpleStringSchema(), consumer_config)
 
 
-def get_sink(stream_name: str, config: Dict = None) -> KinesisStreamsSink:
+def get_sink(table_name: str, config: Dict = None) -> DynamoDbSink:
     props = config or {}
-    sink_properties = {
+    return (DynamoDbSink(**{
+        'table.name': table_name,
         'aws.region': 'us-east-1',
-        'aws.credentials.provider.basic.accesskeyid': 'aws_access_key_id',
-        'aws.credentials.provider.basic.secretkey': 'aws_secret_access_key',
-        'aws.endpoint': 'http://localhost:4566',
+        'aws.credentials.provider': 'BASIC',
+        'aws.credentials.provider.basic.accesskeyid': 'test',
+        'aws.credentials.provider.basic.secretkey': 'test',
+        'aws.endpoint': DYNAMODB_ENDPOINT,
         **props
-    }
-
-    return (KinesisStreamsSink.builder()
-            .set_kinesis_client_properties(sink_properties)
-            .set_serialization_schema(SimpleStringSchema())
-            .set_partition_key_generator(PartitionKeyGenerator.fixed())
-            .set_stream_name(stream_name)
-            .build())
+    }))
 
 
 def run():
+    get_gateway()
     env = StreamExecutionEnvironment.get_execution_environment()
     env.set_runtime_mode(RuntimeExecutionMode.STREAMING)
     env.set_parallelism(1)
@@ -51,15 +53,14 @@ def run():
         env.add_jars(f"file:///{jar_location}")
         env.add_classpaths(f"file:///{jar_location}")
 
-    # Kinesis source definition
-
     # Build a Datastream from the Kinesis source
     stream = env.add_source(get_source('input_stream'))
 
-    # Kinesis sink definition
-    sink = get_sink('PyFlinkTestTable')
+    # Filter out empty records
+    stream = stream.filter(lambda record: record is not None and len(record.strip()) > 0)
 
-    # sink the Datastream from the Kinesis source
+    # Sink to DynamoDB
+    sink = get_sink('PyFlinkTestTable')
     stream.sink_to(sink)
 
     env.execute("kinesis-2-dynamoDB")

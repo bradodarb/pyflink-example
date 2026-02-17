@@ -3,6 +3,7 @@ from pyflink.datastream import StreamExecutionEnvironment, RuntimeExecutionMode,
     RuntimeContext
 from pyflink.datastream.state import MapStateDescriptor
 
+from framework.dagger import Dag
 
 class SerializerMapFunction(MapFunction):
 

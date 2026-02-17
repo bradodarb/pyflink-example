@@ -4,6 +4,7 @@ WORKDIR package
 
 COPY *.jar /package
 COPY pom.xml /package
+COPY src /package/src
 RUN mvn -f /package/pom.xml clean package
 
 FROM scratch as output

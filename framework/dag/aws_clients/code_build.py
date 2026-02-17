@@ -1,8 +1,8 @@
 import json
 from typing import List, Dict, Optional
 
-from iac.lib.aws_clients.boto3_clients import codebuild
-from iac.lib.logger.slog import slog
+from framework.dag.aws_clients.boto3_clients import codebuild
+from framework.dag.logger.slog import slog
 
 
 class BuildExecutionResult:

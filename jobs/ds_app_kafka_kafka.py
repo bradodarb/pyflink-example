@@ -1,5 +1,4 @@
-import os
-from os import path
+from os import path, getenv
 
 from pyflink.common import SimpleStringSchema, WatermarkStrategy
 from pyflink.datastream import (StreamExecutionEnvironment, RuntimeExecutionMode)
@@ -7,7 +6,7 @@ from pyflink.datastream.connectors.base import DeliveryGuarantee
 from pyflink.datastream.connectors.kafka import (KafkaSource,
                                                  KafkaOffsetsInitializer, KafkaSink, KafkaRecordSerializationSchema)
 
-LOCAL_DEBUG = os.getenv('LOCAL_DEBUG', False)
+LOCAL_DEBUG = getenv('LOCAL_DEBUG', False)
 
 
 def run():

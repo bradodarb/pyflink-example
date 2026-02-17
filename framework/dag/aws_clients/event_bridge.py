@@ -4,8 +4,8 @@ from typing import Dict, List, Optional, Union
 
 from botocore.exceptions import ParamValidationError
 
-from iac.lib.aws_clients.boto3_clients import eventbridge
-from iac.lib.logger.slog import slog
+from framework.dag.aws_clients.boto3_clients import eventbridge
+from framework.dag.logger.slog import slog
 
 EVENT_TYPE = Union[str, Dict, List, int, float]
 

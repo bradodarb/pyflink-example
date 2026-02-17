@@ -1,1 +1,4 @@
-apache-flink==1.19.1
+PyYAML==6.0.2
+boto3==1.35.5
+structlog==24.4.0
+schleppy==1.1.22

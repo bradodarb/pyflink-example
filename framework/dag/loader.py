@@ -5,9 +5,8 @@ from functools import lru_cache
 from typing import List
 
 import yaml
-
-from lib.aws_clients.secrets_manager import SecretsManagerClient
-from lib.aws_clients.system_manager_parameter_store import SsmClient
+from framework.dag.aws_clients.secrets_manager import SecretsManagerClient
+from framework.dag.aws_clients.system_manager_parameter_store import SsmClient
 
 SSM_PREFIX = 'ssm:'
 SECRET_MANAGER_PREFIX = 'secret:'
@@ -20,6 +19,8 @@ JSON_EXTENSION = '.json'
 PIPELINE_FILE = 'pipeline.yml'
 
 ssm = SsmClient()
+
+
 class PipelineConfigLoader:
 
     def __init__(self, base_path: str):
@@ -112,9 +113,9 @@ class PipelineConfigLoader:
         return token
 
 
-def resolve(value):
+def resolve(value, file_name=None):
     loader = PipelineConfigLoader(os.path.join(os.path.curdir, value))
-    return loader.load(PIPELINE_FILE)
+    return loader.load(file_name or PIPELINE_FILE)
 
 
 def gather_folders(base_path: str) -> List[str]:
@@ -123,15 +124,14 @@ def gather_folders(base_path: str) -> List[str]:
     result = [folder.path for folder in
               os.scandir(root_path) if
               folder.is_dir()]
-    print(result)
     return result
 
 
 def load_pipelines(base_path: str):
-    print("base path "+base_path)
+    print("base path " + base_path)
     pipelines = [PipelineConfigLoader(os.path.join(os.path.curdir, base_path)).load(PIPELINE_FILE)]
     return pipelines
 
 
 if __name__ == '__main__':
-    print(resolve('../stacks/chatops-demo'))
+    print(resolve('../../config', 'pipeline.yml'))

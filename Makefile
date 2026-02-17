@@ -8,7 +8,15 @@ SHELL := bash
 VENV:=. ./.venv/bin/activate
 
 ifndef app
-app := app.py
+app := app
+endif
+
+ifndef delay_ms
+delay_ms := 100
+endif
+
+ifndef loops
+loops := 1
 endif
 
 .PHONY: fresh
@@ -20,22 +28,26 @@ fresh:
 
 .PHONY: package_aws
 package_aws: clean jar
-	DOCKER_BUILDKIT=1 docker build --build-arg APPLICATION_FILE=${application} --build-arg DIST_ARTIFACT_NAME=pyflink-example -t pyflink/example -f ./aws/MAF.Dockerfile --output ./dist .
+	DOCKER_BUILDKIT=1 docker build --build-arg APPLICATION_FILE=${application} --build-arg DIST_ARTIFACT_NAME=pyflink-example -t pyflink/example -f ./build/aws/MAF.Dockerfile --output ./dist .
+
+.PHONY: deploy_aws
+deploy_aws:
+	aws s3 cp ./dist/*.zip s3://pyflink-bucket/releases/
 
 .PHONY: package_local
 package_local: clean jar
-	DOCKER_BUILDKIT=1 docker build --build-arg --build-arg -t pyflink/local -f ./local/Dockerfile --output ./local/dist .
+	DOCKER_BUILDKIT=1 docker build -t pyflink/dist -f ./build/local/Dockerfile --output ./dist .
+	mkdir -p ./.local/flink/dist
+	rm -rf ./.local/flink/dist/*
+	cp -a ./dist/. ./.local/flink/dist/
 
 
 .PHONY: jar
 jar:
-	DOCKER_BUILDKIT=1
-	cd lib
-	@docker build -t pyflink/jarbundler -f ./maven.Dockerfile --output ../lib/bin .
+	cd lib && DOCKER_BUILDKIT=1 docker build -t pyflink/jarbundler -f ./maven.Dockerfile --output ./bin .
 
 clean:
 	rm -rf ./dist
-	rm -rf ./local/dist
 
 
 deps:
@@ -46,13 +58,26 @@ deps:
 build: package_aws
 
 .PHONY: services
-services:
-	docker compose up --build
+services: package_local
+	docker compose up --build -d
+
+.PHONY: clear_jobs
+clear_jobs:
+	docker compose exec jobmanager bash -c '\
+		for jid in $$(./bin/flink list -a 2>/dev/null | grep -oE "[0-9a-f]{32}" | sort -u); do \
+			echo "Cancelling $$jid"; \
+			./bin/flink cancel $$jid 2>/dev/null || true; \
+		done; \
+		echo "Done"'
 
 .PHONY: run
 run:
-	docker compose exec jobmanager ./bin/flink run -py /opt/develop/${app} -pyarch /opt/develop/py_deps.zip --jarfile /opt/develop/lib/pyflink-services-1.0.jar
+	docker compose exec jobmanager ./bin/flink run -py /opt/develop/${app}.py -pyfs /opt/develop/py_deps.zip -j /opt/develop/lib/pyflink-services-1.0.jar
 
+
+.PHONY: generate
+generate:
+	python generators/kinesis_producer.py --file generators/sensors.json --stream input_stream --endpoint http://localhost:4566 --delay ${delay_ms} --loops ${loops}
 
 .PHONY: test_put_kinesis
 test_put_kinesis:

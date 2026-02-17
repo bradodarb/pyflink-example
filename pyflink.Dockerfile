@@ -1,4 +1,4 @@
-FROM flink:latest
+FROM flink:1.20.3
 
 
 # install jdk, python3, and pip3
@@ -7,7 +7,7 @@ apt-get install -y openjdk-11-jdk-headless python3 python3-pip python3-dev && rm
 RUN ln -s /usr/bin/python3 /usr/bin/python
 
 # install PyFlink
-RUN JAVA_HOME=/usr/lib/jvm/java-11-openjdk-arm64 pip3 install apache-flink==1.19.1
+RUN JAVA_HOME=/usr/lib/jvm/java-11-openjdk-arm64 pip3 install apache-flink==1.20.3
 #
 ### Iceberg Flink Library
 #RUN curl -L https://repo1.maven.org/maven2/org/apache/iceberg/iceberg-flink-runtime-1.16/1.3.1/iceberg-flink-runtime-1.16-1.3.1.jar -o /opt/flink/lib/iceberg-flink-runtime-1.16-1.3.1.jar
@@ -25,8 +25,8 @@ RUN JAVA_HOME=/usr/lib/jvm/java-11-openjdk-arm64 pip3 install apache-flink==1.19
 #RUN curl -L https://repo1.maven.org/maven2/software/amazon/awssdk/bundle/2.20.18/bundle-2.20.18.jar -o /opt/flink/lib/bundle-2.20.18.jar
 
 
-COPY ./test/test_data/ /opt/test/test_data
-COPY ./local/dist/ /opt/develop
-COPY ./output/ /opt/output
-COPY ./local/flink-conf.yaml /opt/flink/conf/flink-conf.yaml
+COPY ./.local/flink/test_data/ /opt/test/test_data
+COPY ./.local/flink/dist/ /opt/develop
+COPY ./.local/flink/output/ /opt/output
+COPY ./.local/flink/flink-conf.yaml /opt/flink/conf/flink-conf.yaml
 RUN chmod a+rwx -R /opt/output

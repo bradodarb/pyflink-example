@@ -1,12 +1,11 @@
-import os
-from os import path
+from os import path, getenv
 from typing import Dict
 
 from pyflink.common.serialization import SimpleStringSchema
 from pyflink.datastream import (StreamExecutionEnvironment, RuntimeExecutionMode)
 from pyflink.datastream.connectors.kinesis import (FlinkKinesisConsumer, KinesisStreamsSink, PartitionKeyGenerator)
 
-LOCAL_DEBUG = os.getenv('LOCAL_DEBUG', False)
+LOCAL_DEBUG = getenv('LOCAL_DEBUG', False)
 
 
 def get_source(stream_name: str, config: Dict = None) -> FlinkKinesisConsumer:
@@ -28,10 +27,10 @@ def get_sink(stream_name: str, config: Dict = None) -> KinesisStreamsSink:
         'aws.region': 'us-east-1',
         'aws.credentials.provider.basic.accesskeyid': 'aws_access_key_id',
         'aws.credentials.provider.basic.secretkey': 'aws_secret_access_key',
-        'aws.endpoint': 'http://localhost:4566',
+        'aws.endpoint': 'http://localhost:8000',
         **props
     }
-
+    sink  =  DynamoDbSink
     return (KinesisStreamsSink.builder()
             .set_kinesis_client_properties(sink_properties)
             .set_serialization_schema(SimpleStringSchema())

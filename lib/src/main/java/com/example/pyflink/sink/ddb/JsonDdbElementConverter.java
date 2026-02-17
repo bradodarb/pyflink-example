@@ -1,10 +1,10 @@
 package com.example.pyflink.sink.ddb;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import lombok.Builder;
+import lombok.SneakyThrows;
 import lombok.experimental.SuperBuilder;
-import org.apache.flink.api.connector.sink2.SinkWriter;
 import org.apache.flink.connector.base.sink.writer.ElementConverter;
 import org.apache.flink.connector.dynamodb.sink.DynamoDbWriteRequest;
 import org.apache.flink.connector.dynamodb.sink.DynamoDbWriteRequestType;
@@ -14,10 +14,14 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import java.util.*;
 
 @SuperBuilder
-public class JsonDdbElementConverter implements ElementConverter<ObjectNode, DynamoDbWriteRequest> {
+public class JsonDdbElementConverter implements ElementConverter<String, DynamoDbWriteRequest> {
 
+    final ObjectMapper objectMapper = new ObjectMapper();
+
+    @SneakyThrows
     @Override
-    public DynamoDbWriteRequest apply(ObjectNode jsonNodes, org.apache.flink.api.connector.sink2.SinkWriter.Context context) {
+    public DynamoDbWriteRequest apply(String jsonBlob, org.apache.flink.api.connector.sink2.SinkWriter.Context context) {
+        ObjectNode jsonNodes = objectMapper.readValue(jsonBlob, ObjectNode.class);
         final Map<String, AttributeValue> item = convertMap(jsonNodes, 0);
         return DynamoDbWriteRequest.builder().setType(DynamoDbWriteRequestType.PUT).setItem(item).build();
     }
@@ -27,22 +31,22 @@ public class JsonDdbElementConverter implements ElementConverter<ObjectNode, Dyn
 
         int currentDepth = depth + 1;
         node.fieldNames().forEachRemaining(f -> {
-            item.put(f, convertNode((ObjectNode) node.get(f), currentDepth));
+            item.put(f, convertNode(node.get(f), currentDepth));
         });
         return item;
     }
 
-    protected Collection<AttributeValue> convertList(ObjectNode node, int depth) {
+    protected Collection<AttributeValue> convertList(JsonNode node, int depth) {
         List<AttributeValue> items = new ArrayList<>();
 
         int currentDepth = depth + 1;
         node.elements().forEachRemaining(element -> {
-            items.add(convertNode((ObjectNode) element, currentDepth));
+            items.add(convertNode(element, currentDepth));
         });
         return items;
     }
 
-    protected AttributeValue convertNode(ObjectNode node, int depth) {
+    protected AttributeValue convertNode(JsonNode node, int depth) {
 
         int currentDepth = depth + 1;
         AttributeValue.Builder builder = AttributeValue.builder();
@@ -60,8 +64,7 @@ public class JsonDdbElementConverter implements ElementConverter<ObjectNode, Dyn
                 builder.l(convertList(node, currentDepth));
                 break;
             case OBJECT:
-                builder.m(convertMap(node, currentDepth));
-                //recurse
+                builder.m(convertMap((ObjectNode) node, currentDepth));
                 break;
             case STRING:
                 builder.s(node.asText());

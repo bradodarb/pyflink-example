@@ -1,8 +1,8 @@
 import json
 from typing import Dict, Optional
 
-from iac.lib.aws_clients.boto3_clients import codepipeline
-from iac.lib.logger.slog import slog
+from framework.dag.aws_clients.boto3_clients import codepipeline
+from framework.dag.logger.slog import slog
 
 
 class PipelineExecutionResult:

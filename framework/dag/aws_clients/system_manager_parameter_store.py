@@ -2,8 +2,8 @@ from functools import lru_cache
 
 from botocore.exceptions import ClientError
 
-from iac.lib.aws_clients.boto3_clients import ssm
-from iac.lib.logger.slog import slog
+from framework.dag.aws_clients.boto3_clients import ssm
+from framework.dag.logger.slog import slog
 
 
 class SsmClient(object):

@@ -1,0 +1,21 @@
+version: str
+kind: str
+name: str
+description: str
+
+flow:
+  - source: (name str)
+    description: str
+    config: {}
+
+  - sink: (name str)
+    description: str
+    config: {}
+
+  - view: (name str)
+    description: str
+    config: {}
+
+  - udf: (name str)
+    description: str
+    config: {}
