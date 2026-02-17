@@ -60,6 +60,9 @@ build: package_aws
 .PHONY: services
 services: package_local
 	docker compose up --build -d
+	@echo "Waiting for Postgres to be ready..."
+	@until docker compose exec -T postgres pg_isready -U postgres > /dev/null 2>&1; do sleep 1; done
+	docker compose exec -T postgres psql -U postgres -f /docker-entrypoint-initdb.d/01_create_tables.sql
 
 .PHONY: clear_jobs
 clear_jobs:
@@ -78,6 +81,10 @@ run:
 .PHONY: generate
 generate:
 	python generators/kinesis_producer.py --file generators/sensors.json --stream input_stream --endpoint http://localhost:4566 --delay ${delay_ms} --loops ${loops}
+
+.PHONY: generate_kafka
+generate_kafka:
+	python generators/kafka_producer.py --file generators/sensors.json --topic input_topic --brokers localhost:9092 --delay ${delay_ms} --loops ${loops}
 
 .PHONY: test_put_kinesis
 test_put_kinesis:
